@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beverage Price Distribution Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            color: #1c1e21;
+            flex-shrink: 0;
+            margin: 0 0 20px 0; /* Control spacing and prevent overflow */
+        }
+       .dashboard-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+            overflow: hidden;
+            min-height: 0; /* Helps nested flex/grid containers calculate size correctly */
+        }
+       .controls-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+       .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            flex-grow: 1;
+            overflow: hidden;
+            min-height: 0; /* Helps nested flex/grid containers calculate size correctly */
+        }
+       .chart-wrapper {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            color: #4b4f56;
+        }
+        h3 {
+            font-size: 1.1em;
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            color: #4b4f56;
+            flex-shrink: 0; /* Prevent title from shrinking */
+        }
+       .control-group {
+            margin-bottom: 5px;
+        }
+       .control-group label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+       .control-group input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+        .axis-control-group {
+            margin-top: 15px;
+        }
+        .axis-control-group h3 {
+            font-size: 1.1em;
+            border: none;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+        .axis-control-group label {
+            justify-content: space-between;
+            font-weight: normal;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .axis-control-group input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: right;
+        }
+        .canvas-container {
+            flex-grow: 1; /* Allow this container to fill the remaining space */
+            position: relative; /* Needed for Chart.js responsiveness */
+            min-height: 0; /* Prevent flexbox overflow */
+        }
+        canvas {
+            /* Canvas will be sized by Chart.js based on its container */
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard-container {
+                flex-direction: row;
+                align-items: stretch; /* Ensure children fill height */
+            }
+            .controls-container {
+                flex: 0 0 300px; /* Fixed width for controls */
+            }
+            .charts-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Beverage Price Distribution Dashboard</h1>
+
+    <div class="dashboard-container">
+        <div class="controls-container">
+            <div class="control-group" id="on-trade-controls">
+                <h2>On-Trade Categories</h2>
+                <label><input type="checkbox" name="on-trade" value="Beer" checked> Beer</label>
+                <label><input type="checkbox" name="on-trade" value="Zero Alcohol Beer"> Zero Alcohol Beer</label>
+                <label><input type="checkbox" name="on-trade" value="Cocktails" checked> Cocktails</label>
+            </div>
+            <div class="control-group" id="off-trade-controls">
+                <h2>Off-Trade Categories</h2>
+                <label><input type="checkbox" name="off-trade" value="Beer" checked> Beer</label>
+                <label><input type="checkbox" name="off-trade" value="RTD"> Ready to Drink</label>
+                <label><input type="checkbox" name="off-trade" value="All Zero Alcohol" checked> All Zero Alcohol</label>
+            </div>
+            <div class="control-group" id="axis-controls">
+                <h2>Axis Scales</h2>
+                <div class="axis-control-group">
+                    <h3>On-Trade Chart</h3>
+                    <label><span>Max Y-Axis (Count)</span><input type="number" id="onTradeYMax" value="10" min="1"></label>
+                    <label><span>Max X-Axis ($/L)</span><input type="number" id="onTradeXMax" value="200" min="1"></label>
+                </div>
+                <div class="axis-control-group">
+                    <h3>Off-Trade Chart</h3>
+                    <label><span>Max Y-Axis (Count)</span><input type="number" id="offTradeYMax" value="8" min="1"></label>
+                    <label><span>Max X-Axis ($/L)</span><input type="number" id="offTradeXMax" value="60" min="1"></label>
+                </div>
+            </div>
+        </div>
+        <div class="charts-container">
+            <div class="chart-wrapper">
+                <h3>On-Trade Price Distribution</h3>
+                <div class="canvas-container">
+                    <canvas id="onTradeChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <h3>Off-Trade Price Distribution</h3>
+                <div class="canvas-container">
+                    <canvas id="offTradeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Exchange rates for normalization to USD
+        const exchangeRates = { USD: 1, GBP: 1.25, EUR: 1.08, AUD: 0.66 };
+
+        // Volume conversions to Litre
+        const volumeConversions = { 'ml': 0.001, 'cl': 0.01, 'l': 1, 'floz': 0.0295735, 'pint': 0.568261 };
+
+        // Raw data extracted from sources.
+        const rawData = [
+            { category: 'Beer', trade: 'On-Trade', price: 5.59, currency: 'GBP', volume: 1, unit: 'pint' }, { category: 'Beer', trade: 'On-Trade', price: 8.00, currency: 'GBP', volume: 1, unit: 'pint' }, { category: 'Beer', trade: 'On-Trade', price: 4.79, currency: 'GBP', volume: 1, unit: 'pint' }, { category: 'Beer', trade: 'On-Trade', price: 5.01, currency: 'GBP', volume: 1, unit: 'pint' }, { category: 'Beer', trade: 'On-Trade', price: 4.56, currency: 'GBP', volume: 1, unit: 'pint' }, { category: 'Beer', trade: 'On-Trade', price: 4.50, currency: 'EUR', volume: 500, unit: 'ml' }, { category: 'Beer', trade: 'On-Trade', price: 8.00, currency: 'EUR', volume: 500, unit: 'ml' }, { category: 'Beer', trade: 'On-Trade', price: 14.50, currency: 'AUD', volume: 1, unit: 'pint' }, { category: 'Beer', trade: 'On-Trade', price: 17.00, currency: 'AUD', volume: 1, unit: 'pint' },
+            { category: 'Beer', trade: 'Off-Trade', price: 0.67, currency: 'GBP', volume: 440, unit: 'ml' }, { category: 'Beer', trade: 'Off-Trade', price: 1.08, currency: 'GBP', volume: 330, unit: 'ml' }, { category: 'Beer', trade: 'Off-Trade', price: 2.90, currency: 'GBP', volume: 500, unit: 'ml' }, { category: 'Beer', trade: 'Off-Trade', price: 0.75, currency: 'USD', volume: 12, unit: 'floz' }, { category: 'Beer', trade: 'Off-Trade', price: 0.47, currency: 'USD', volume: 12, unit: 'floz' }, { category: 'Beer', trade: 'Off-Trade', price: 2.58, currency: 'AUD', volume: 330, unit: 'ml' }, { category: 'Beer', trade: 'Off-Trade', price: 4.50, currency: 'AUD', volume: 330, unit: 'ml' },
+            { category: 'Cocktails', trade: 'On-Trade', price: 13.00, currency: 'GBP', volume: 1, unit: 'serving' }, { category: 'Cocktails', trade: 'On-Trade', price: 19.50, currency: 'GBP', volume: 1, unit: 'serving' }, { category: 'Cocktails', trade: 'On-Trade', price: 17.00, currency: 'USD', volume: 1, unit: 'serving' }, { category: 'Cocktails', trade: 'On-Trade', price: 25.00, currency: 'USD', volume: 1, unit: 'serving' }, { category: 'Cocktails', trade: 'On-Trade', price: 20.00, currency: 'AUD', volume: 1, unit: 'serving' }, { category: 'Cocktails', trade: 'On-Trade', price: 25.50, currency: 'AUD', volume: 1, unit: 'serving' }, { category: 'Cocktails', trade: 'On-Trade', price: 9.00, currency: 'EUR', volume: 1, unit: 'serving' }, { category: 'Cocktails', trade: 'On-Trade', price: 13.00, currency: 'EUR', volume: 1, unit: 'serving' },
+            { category: 'RTD', trade: 'Off-Trade', price: 1.42, currency: 'USD', volume: 12, unit: 'floz' }, { category: 'RTD', trade: 'Off-Trade', price: 1.51, currency: 'USD', volume: 12, unit: 'floz' }, { category: 'RTD', trade: 'Off-Trade', price: 2.50, currency: 'USD', volume: 355, unit: 'ml' }, { category: 'RTD', trade: 'Off-Trade', price: 2.75, currency: 'USD', volume: 12, unit: 'floz' }, { category: 'RTD', trade: 'Off-Trade', price: 4.90, currency: 'AUD', volume: 330, unit: 'ml' }, { category: 'RTD', trade: 'Off-Trade', price: 5.50, currency: 'AUD', volume: 250, unit: 'ml' },
+            { category: 'Zero Alcohol Beer', trade: 'On-Trade', price: 5.15, currency: 'GBP', volume: 1, unit: 'pint' }, { category: 'Zero Alcohol Beer', trade: 'On-Trade', price: 5.50, currency: 'GBP', volume: 1, unit: 'pint' }, { category: 'Zero Alcohol Beer', trade: 'On-Trade', price: 7.00, currency: 'EUR', volume: 500, unit: 'ml' },
+            { category: 'Zero Alcohol Beer', trade: 'Off-Trade', price: 1.00, currency: 'GBP', volume: 330, unit: 'ml' }, { category: 'Zero Alcohol Beer', trade: 'Off-Trade', price: 1.75, currency: 'USD', volume: 12, unit: 'floz' }, { category: 'Zero Alcohol Beer', trade: 'Off-Trade', price: 1.90, currency: 'USD', volume: 12, unit: 'floz' },
+            { category: 'Zero Alcohol Spirits', trade: 'Off-Trade', price: 31.99, currency: 'USD', volume: 700, unit: 'ml' }, { category: 'Zero Alcohol Spirits', trade: 'Off-Trade', price: 35.99, currency: 'USD', volume: 700, unit: 'ml' }, { category: 'Zero Alcohol Wine', trade: 'Off-Trade', price: 24.99, currency: 'USD', volume: 750, unit: 'ml' }, { category: 'Zero Alcohol Wine', trade: 'Off-Trade', price: 11.00, currency: 'USD', volume: 750, unit: 'ml' }, { category: 'Zero Alcohol Wine', trade: 'Off-Trade', price: 3.15, currency: 'GBP', volume: 750, unit: 'ml' },
+        ];
+
+        // Process data to calculate price per litre in USD
+        const priceData = rawData.map(item => {
+            let volumeInL = (item.unit === 'serving') ? 0.150 : item.volume * (volumeConversions[item.unit] || 0);
+            if (volumeInL === 0) return null;
+            const priceInUSD = item.price * (exchangeRates[item.currency] || 0);
+            return {
+                category: item.category,
+                trade: item.trade,
+                pricePerLitreUSD: priceInUSD / volumeInL
+            };
+        }).filter(item => item !== null && isFinite(item.pricePerLitreUSD));
+
+        let chartInstances = {};
+
+        // Generates an array of numbers for histogram bins
+        function generateBins(maxValue, numBins = 8) {
+            if (maxValue <= 0) return [0];
+            const bins = [];
+            const step = maxValue / numBins;
+            for (let i = 0; i <= numBins; i++) {
+                bins.push(parseFloat((i * step).toFixed(2)));
+            }
+            return bins;
+        }
+
+        function createHistogram(canvasId, data, bins, label, yMax) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            if (chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+
+            const binCounts = Array(bins.length).fill(0);
+            const binLabels = bins.map((bin, i) => {
+                if (i === bins.length - 1) return `$${bins[i-1]}+`;
+                return `$${bin}-${bins[i+1]}`;
+            }).slice(0, -1);
+            binLabels[bins.length - 1] = `$${bins[bins.length - 1]}+`;
+
+
+            data.forEach(value => {
+                for (let i = 0; i < bins.length -1; i++) {
+                    if (value >= bins[i] && value < bins[i+1]) {
+                        binCounts[i]++;
+                        break;
+                    }
+                }
+                if (value >= bins[bins.length - 1]) {
+                    binCounts[bins.length - 1]++;
+                }
+            });
+
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: binLabels,
+                    datasets: [{
+                        label: label,
+                        data: binCounts,
+                        backgroundColor: canvasId === 'onTradeChart' ? 'rgba(255, 99, 132, 0.6)' : 'rgba(54, 162, 235, 0.6)',
+                        borderColor: canvasId === 'onTradeChart' ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: yMax,
+                            title: { display: true, text: 'Number of Products' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Price per Litre (USD)' }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateCharts() {
+            // On-Trade Chart
+            const onTradeControls = document.querySelectorAll('#on-trade-controls input:checked');
+            let selectedOnTradeCategories = Array.from(onTradeControls).map(cb => cb.value);
+            let onTradeData = priceData.filter(d => d.trade === 'On-Trade' && selectedOnTradeCategories.includes(d.category));
+            
+            const onTradeYMax = parseInt(document.getElementById('onTradeYMax').value, 10) || 10;
+            const onTradeXMax = parseInt(document.getElementById('onTradeXMax').value, 10) || 200;
+            const onTradeBins = generateBins(onTradeXMax, 8);
+            
+            createHistogram('onTradeChart', onTradeData.map(d => d.pricePerLitreUSD), onTradeBins, 'On-Trade Product Count', onTradeYMax);
+
+            // Off-Trade Chart
+            const offTradeControls = document.querySelectorAll('#off-trade-controls input:checked');
+            let selectedOffTradeCategories = new Set();
+            offTradeControls.forEach(cb => {
+                if (cb.value === 'All Zero Alcohol') {
+                    selectedOffTradeCategories.add('Zero Alcohol Beer').add('Zero Alcohol Wine').add('Zero Alcohol Spirits');
+                } else {
+                    selectedOffTradeCategories.add(cb.value);
+                }
+            });
+
+            let offTradeData = priceData.filter(d => d.trade === 'Off-Trade' && selectedOffTradeCategories.has(d.category));
+            
+            const offTradeYMax = parseInt(document.getElementById('offTradeYMax').value, 10) || 8;
+            const offTradeXMax = parseInt(document.getElementById('offTradeXMax').value, 10) || 60;
+            const offTradeBins = generateBins(offTradeXMax, 8);
+
+            createHistogram('offTradeChart', offTradeData.map(d => d.pricePerLitreUSD), offTradeBins, 'Off-Trade Product Count', offTradeYMax);
+        }
+
+        // Initial chart draw and event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const allInputs = document.querySelectorAll('.controls-container input');
+            allInputs.forEach(input => {
+                input.addEventListener('input', updateCharts);
+            });
+            updateCharts(); // Draw charts with default selections
+        });
+    </script>
+
+</body>
+</html>
